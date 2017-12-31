@@ -63,26 +63,16 @@ class CatsEffectTest
       .execute {
         get("8") from "beer"
       }
-      .unsafeRunSync()
-      .right
-      .get
-      .result
+    val result = resp.unsafeRunSync().right.get.result
 
-    resp.exists shouldBe false
-    resp.id shouldBe "8"
+    result.exists shouldBe false
+    result.id shouldBe "8"
 
     effect.unsafeRunSync()
 
-    val resp2 = http
-      .execute {
-        get("8") from "beer"
-      }
-      .unsafeRunSync()
-      .right
-      .get
-      .result
-
-    resp2.exists shouldBe true
-    resp2.id shouldBe "8"
+    // resp is not memoized
+    val result2 = resp.unsafeRunSync().right.get.result
+    result2.exists shouldBe true
+    result2.id shouldBe "8"
   }
 }
