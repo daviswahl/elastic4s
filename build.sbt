@@ -24,6 +24,7 @@ lazy val root = Project("elastic4s", file("."))
     sprayjson,
     aws,
     httpstreams,
+    catsEffect,
 //    streams,
     xpacksecurity
   )
@@ -169,6 +170,11 @@ lazy val aws = Project("elastic4s-aws", file("elastic4s-aws"))
     name := "elastic4s-aws",
     libraryDependencies += "com.amazonaws" % "aws-java-sdk-core" % AWSJavaSdkVersion
   ).dependsOn(core, http)
+
+lazy val catsEffect = Project("elastic4s-cats-effect", file("elastic4s-cats-effect")).settings(
+  name := "elastic4s-cats-effect",
+  libraryDependencies += "org.typelevel" %% "cats-effect" % CatsEffectVersion
+).dependsOn(http, testkit % "test")
 
 lazy val tests = Project("elastic4s-tests", file("elastic4s-tests"))
   .settings(
