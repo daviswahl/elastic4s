@@ -63,7 +63,7 @@ class CatsEffectTest
     effect.unsafeRunSync()
 
     // the effect is not memoized
-    val result2 = resp.unsafeRunSync().right.get.result
+    val result2 = doGet.unsafeRunSync().right.get.result
     result2.exists shouldBe true
   }
 }
