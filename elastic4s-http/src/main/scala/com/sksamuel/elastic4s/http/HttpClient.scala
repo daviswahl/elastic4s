@@ -84,12 +84,12 @@ trait HttpClient extends Logging {
   */
 trait HttpRequestClient extends Logging {
 
-  def async[F[_]: FromListener : Functor](method: String, endpoint: String): F[HttpResponse] =
+  def async[F[_]: FromListener](method: String, endpoint: String): F[HttpResponse] =
     async(method, endpoint, Map.empty)
 
-  def async[F[_]: FromListener : Functor](method: String, endpoint: String, params: Map[String, Any]): F[HttpResponse]
+  def async[F[_]: FromListener](method: String, endpoint: String, params: Map[String, Any]): F[HttpResponse]
 
-  def async[F[_]: FromListener : Functor](method: String,
+  def async[F[_]: FromListener](method: String,
             endpoint: String,
             params: Map[String, Any],
             entity: HttpEntity): F[HttpResponse]

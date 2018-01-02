@@ -18,30 +18,29 @@ trait FromListener[F[_]] extends Functor[F] {
 object FromListener {
   def apply[F[_]: FromListener]: FromListener[F] = implicitly[FromListener[F]]
 
+  def fromResponse(r: org.elasticsearch.client.Response): HttpResponse = {
+    val entity = Option(r.getEntity).map { entity =>
+      val contentEncoding =
+        Option(entity.getContentEncoding).map(_.getValue).getOrElse("UTF-8")
+      implicit val codec = Codec(Charset.forName(contentEncoding))
+      val body           = Source.fromInputStream(entity.getContent).mkString
+      HttpEntity.StringEntity(body, Some(contentEncoding))
+    }
+    val headers = r.getHeaders.map { header =>
+      header.getName -> header.getValue
+    }.toMap
+    HttpResponse(r.getStatusLine.getStatusCode, entity, headers)
+  }
+
   implicit def scalaFutureFromListenerInstance(
-      implicit ec: ExecutionContext = ExecutionContext.Implicits.global)
-    : FromListener[Future] =
+      implicit ec: ExecutionContext = ExecutionContext.Implicits.global): FromListener[Future] =
     new FromListener[Future] {
 
       override def map[A, B](fa: Future[A])(f: A => B): Future[B] = fa.map(f)
 
-      override def fromListener(callback: ResponseListener => Unit): Future[HttpResponse] = {
+      override def fromListener(f: ResponseListener => Unit): Future[HttpResponse] = {
         val p = Promise[HttpResponse]()
-        callback(new ResponseListener {
-
-          def fromResponse(r: org.elasticsearch.client.Response): HttpResponse = {
-            val entity = Option(r.getEntity).map { entity =>
-              val contentEncoding =
-                Option(entity.getContentEncoding).map(_.getValue).getOrElse("UTF-8")
-              implicit val codec = Codec(Charset.forName(contentEncoding))
-              val body           = Source.fromInputStream(entity.getContent).mkString
-              HttpEntity.StringEntity(body, Some(contentEncoding))
-            }
-            val headers = r.getHeaders.map { header =>
-              header.getName -> header.getValue
-            }.toMap
-            HttpResponse(r.getStatusLine.getStatusCode, entity, headers)
-          }
+        f(new ResponseListener {
 
           override def onSuccess(r: org.elasticsearch.client.Response): Unit =
             p.trySuccess(fromResponse(r))

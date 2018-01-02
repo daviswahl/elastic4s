@@ -42,37 +42,28 @@ class CatsEffectTest
     .unsafeRunSync()
 
   val effect = http.execute {
-    bulk(
-      indexInto("beer/lager") fields (
-        "name"        -> "coors light",
-        "brand"       -> "coors",
-        "ingredients" -> Seq("hops", "barley", "water", "yeast")
-      ) id "4",
-      indexInto("beer/lager") fields (
-        "name"        -> "bud lite",
-        "brand"       -> "bud",
-        "ingredients" -> Seq("hops", "barley", "water", "yeast")
-      ) id "8"
-    ).refresh(RefreshPolicy.Immediate)
+    indexInto("beer/lager") fields (
+      "name"        -> "bud lite",
+      "brand"       -> "bud",
+      "ingredients" -> Seq("hops", "barley", "water", "yeast")
+    ) id "8" refresh RefreshPolicy.Immediate
   }
 
-  "An IO Effect" should "be deferred until executed" in {
+  "An IO Effect" should "be deferred until run" in {
 
-    Thread.sleep(1000) // ensure the effect is not being run
-    val resp = http
+    Thread.sleep(2000) // ensure the effect is not being run
+    val doGet = http
       .execute {
         get("8") from "beer"
       }
-    val result = resp.unsafeRunSync().right.get.result
+    val result = doGet.unsafeRunSync().right.get.result
 
     result.exists shouldBe false
-    result.id shouldBe "8"
 
     effect.unsafeRunSync()
 
-    // resp is not memoized
+    // the effect is not memoized
     val result2 = resp.unsafeRunSync().right.get.result
     result2.exists shouldBe true
-    result2.id shouldBe "8"
   }
 }
