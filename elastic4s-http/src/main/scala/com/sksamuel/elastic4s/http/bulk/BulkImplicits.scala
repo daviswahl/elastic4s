@@ -16,7 +16,7 @@ trait BulkImplicits {
 
   implicit object BulkExecutable extends HttpExecutable[BulkDefinition, BulkResponse] with Logging {
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient, bulk: BulkDefinition): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F, E], bulk: BulkDefinition)(implicit E: FromListener[F, E]): F[HttpResponse] = {
 
       val rows = BulkBuilderFn(bulk)
       // es seems to require a trailing new line as well
@@ -28,7 +28,7 @@ trait BulkImplicits {
       bulk.timeout.foreach(params.put("timeout", _))
       bulk.refresh.map(RefreshPolicyHttpValue.apply).foreach(params.put("refresh", _))
 
-      client.async[F]("POST", "/_bulk", params.toMap, entity)
+      client.async("POST", "/_bulk", params.toMap, entity)
     }
   }
 }

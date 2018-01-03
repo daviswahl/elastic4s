@@ -4,13 +4,15 @@ import java.nio.file.Files
 
 import com.sksamuel.elastic4s.embedded.LocalNode
 
+import scala.concurrent.Future
+
 object Test extends App {
 
   import com.sksamuel.elastic4s.http.ElasticDsl._
 
   val clusterName = "getting-started-with-elastic4s"
   val homePath = Files.createTempDirectory(clusterName)
-  val localNode = LocalNode(clusterName, homePath.toAbsolutePath.toString)
+  val localNode = LocalNode[Future](clusterName, homePath.toAbsolutePath.toString)
   localNode.start()
 
   val client = localNode.http(true)

@@ -18,8 +18,8 @@ trait ExplainImplicits {
       }
     }
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient,
-                         request: ExplainDefinition): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F,E],
+                         request: ExplainDefinition)(implicit E: FromListener[F,E]): F[HttpResponse] = {
 
       val endpoint = s"/${request.indexAndType.index}/${request.indexAndType.`type`}/${request.id}/_explain"
 

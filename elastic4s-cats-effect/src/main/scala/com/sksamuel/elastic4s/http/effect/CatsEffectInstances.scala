@@ -9,7 +9,7 @@ import org.elasticsearch.client.{ResponseException, ResponseListener}
  * Cats `IO` kind or (my end goal in all of this nonsense) a Catbird Rerunnable.
  */
 object CatsEffectInstances {
-  implicit def FromListenerForEffect[F[_]: Effect]: FromListener[F] = new FromListener[F] {
+  implicit def FromListenerForEffect[F[_]: Effect]: FromListener[F, ResponseListener] = new FromListener[F, ResponseListener] {
     override def fromListener(f: ResponseListener => Unit): F[HttpResponse] = {
       Effect[F].async { callback =>
         f(new ResponseListener {

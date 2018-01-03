@@ -8,6 +8,7 @@ import org.elasticsearch.transport.RemoteTransportException
 import org.scalatest.Suite
 import org.slf4j.LoggerFactory
 
+import scala.concurrent.Future
 import scala.util.Try
 
 /**
@@ -16,7 +17,7 @@ import scala.util.Try
   * tests to allow for blocking, iterative coding
   */
 trait ElasticSugar extends ElasticDsl {
-  this: Suite with LocalNodeProvider =>
+  this: Suite with LocalNodeProvider[Future] =>
 
   val logger = LoggerFactory.getLogger(getClass)
 

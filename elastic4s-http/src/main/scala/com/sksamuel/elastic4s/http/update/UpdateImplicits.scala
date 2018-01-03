@@ -61,7 +61,7 @@ trait UpdateImplicits {
       }
     }
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: UpdateDefinition): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F,E], request: UpdateDefinition)(implicit E: FromListener[F,E]): F[HttpResponse] = {
 
       val endpoint = s"/${URLEncoder.encode(request.indexAndType.index)}/${request.indexAndType.`type`}/${URLEncoder.encode(request.id)}/_update"
 
@@ -85,7 +85,7 @@ trait UpdateImplicits {
   }
 
   implicit object UpdateByQueryHttpExecutable extends HttpExecutable[UpdateByQueryDefinition, UpdateByQueryResponse] {
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: UpdateByQueryDefinition): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F,E], request: UpdateByQueryDefinition)(implicit E: FromListener[F,E]): F[HttpResponse] = {
 
       val endpoint = if (request.indexesAndTypes.types.isEmpty)
         s"/${request.indexesAndTypes.indexes.mkString(",")}/_update_by_query"

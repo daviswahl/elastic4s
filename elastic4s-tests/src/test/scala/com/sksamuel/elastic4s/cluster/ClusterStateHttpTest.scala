@@ -2,7 +2,6 @@ package com.sksamuel.elastic4s.cluster
 
 import cats.instances.future._
 import com.sksamuel.elastic4s.http.ElasticDsl
-import com.sksamuel.elastic4s.http.ScalaFutureFromListener._
 import com.sksamuel.elastic4s.http.cluster.ClusterStateResponse.Index
 import com.sksamuel.elastic4s.testkit.DiscoveryLocalNodeProvider
 import org.scalatest.{Matchers, WordSpec}

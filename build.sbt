@@ -242,3 +242,4 @@ lazy val noPublishSettings = Seq(
   publishLocal := (),
   publishArtifact := false
 )
+parallelExecution in Test := false

@@ -25,5 +25,5 @@ abstract class HttpExecutable[T, U: Manifest] extends Logging {
     * @param request
     * @return
     */
-  def execute[F[_]: FromListener](client: HttpRequestClient, request: T): F[HttpResponse]
+  def execute[F[_], E](client: HttpRequestClient[F, E], request: T)(implicit E: FromListener[F, E]): F[HttpResponse]
 }

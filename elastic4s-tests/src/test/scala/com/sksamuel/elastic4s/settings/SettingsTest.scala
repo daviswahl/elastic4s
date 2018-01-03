@@ -8,7 +8,7 @@ import org.scalatest.{Matchers, WordSpec}
 import scala.util.Try
 import scala.concurrent.ExecutionContext.Implicits.global
 import cats.instances.future._
-import com.sksamuel.elastic4s.http.ScalaFutureFromListener._
+
 class SettingsTest extends WordSpec with Matchers with ElasticDsl with DiscoveryLocalNodeProvider {
 
   deleteIdx("settingsa")

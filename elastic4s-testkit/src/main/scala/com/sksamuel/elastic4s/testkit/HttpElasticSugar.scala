@@ -6,14 +6,16 @@ import com.sksamuel.elastic4s.{IndexAndTypes, Indexes}
 import org.elasticsearch.ResourceAlreadyExistsException
 import org.elasticsearch.transport.RemoteTransportException
 import org.scalatest.Suite
+
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 /**
   * Provides helper methods for things like refreshing an index, and blocking until an
   * index has a certain count of documents. These methods are very useful when writing
   * tests to allow for blocking, iterative coding
   */
 trait HttpElasticSugar extends ElasticDsl {
-  this: Suite with LocalNodeProvider =>
+  this: Suite with LocalNodeProvider[Future] =>
 
   // refresh all indexes
   def refreshAll(): RefreshIndexResponse = refresh(Indexes.All)

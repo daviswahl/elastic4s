@@ -6,7 +6,7 @@ import java.nio.file.{Path, Paths}
 import com.sksamuel.elastic4s.TcpClient
 import com.sksamuel.elastic4s.http.{HttpClient, HttpRequestClient}
 import com.sksamuel.exts.Logging
-import org.elasticsearch.client.Client
+import org.elasticsearch.client.{Client, ResponseListener}
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.index.reindex.ReindexPlugin
 import org.elasticsearch.node.{InternalSettingsPreparer, Node}
@@ -16,15 +16,16 @@ import org.elasticsearch.script.mustache.MustachePlugin
 import org.elasticsearch.transport.Netty4Plugin
 
 import scala.collection.JavaConverters._
+import scala.concurrent.Future
 import scala.util.Try
 
-trait LocalNode {
+trait LocalNode[F[_]] {
   def nodeId: String
   def ip: String
   def host: String
   def port: Int
   def tcp(shutdownNodeOnClose: Boolean = true): TcpClient
-  def http(shutdownNodeOnClose: Boolean): HttpClient
+  def http(shutdownNodeOnClose: Boolean): HttpClient[F, ResponseListener]
   def clusterName: String
   def pathData: Path
   def pathHome: Path
@@ -34,14 +35,14 @@ trait LocalNode {
 }
 
 // a connection to a local node that was already started
-class RemoteLocalNode(val clusterName: String,
+class RemoteLocalNode[F[_]](val clusterName: String,
                       val nodeId: String,
                       val ip: String,
                       httpAddress: String,
                       transportAddress: String,
                       val pathData: Path,
                       val pathHome: Path,
-                      pathRepo: Path) extends LocalNode {
+                      pathRepo: Path) extends LocalNode[F] {
   require(httpAddress != null, "httpAddress cannot be null")
   require(transportAddress != null, "transportAddress cannot be null")
 
@@ -51,15 +52,15 @@ class RemoteLocalNode(val clusterName: String,
     TcpClient.transport(s"elasticsearch://$host:$port?cluster.name=$clusterName")
   }
 
-  override def http(shutdownNodeOnClose: Boolean): HttpClient = HttpClient(s"elasticsearch://$host:$port?cluster.name=$clusterName")
+  override def http(shutdownNodeOnClose: Boolean): HttpClient[F, ResponseListener] = HttpClient[F](s"elasticsearch://$host:$port?cluster.name=$clusterName")
   override def host: String = httpAddress.split(':').head
   override def port: Int = httpAddress.split(':').last.toInt
 }
 
 // a new locally started internal node
-class InternalLocalNode(settings: Settings, plugins: List[Class[_ <: Plugin]])
+class InternalLocalNode[F[_]](settings: Settings, plugins: List[Class[_ <: Plugin]])
   extends Node(InternalSettingsPreparer.prepareEnvironment(settings, null), plugins.asJava)
-    with LocalNode
+    with LocalNode[F]
     with Logging {
   super.start()
 
@@ -130,9 +131,9 @@ class InternalLocalNode(settings: Settings, plugins: List[Class[_ <: Plugin]])
     * If shutdownNodeOnClose is true, then the local node will be shutdown once this
     * client is closed. Otherwise you are required to manage the lifecycle of the local node yourself.
     */
-  override def http(shutdownNodeOnClose: Boolean): HttpClient = new HttpClient {
-    private val delegate = HttpClient(s"elasticsearch://$host:$port")
-    override def client: HttpRequestClient = delegate.client
+  override def http(shutdownNodeOnClose: Boolean): HttpClient[F, ResponseListener] = new HttpClient[F, ResponseListener] {
+    private val delegate = HttpClient[F](s"elasticsearch://$host:$port")
+    override def client: HttpRequestClient[F, ResponseListener] = delegate.client
     override def close(): Unit = {
       if (shutdownNodeOnClose)
         stop()
@@ -140,7 +141,7 @@ class InternalLocalNode(settings: Settings, plugins: List[Class[_ <: Plugin]])
   }
 }
 
-class LocalNodeTcpClient(node: InternalLocalNode, shutdownNodeOnClose: Boolean) extends TcpClient {
+class LocalNodeTcpClient[F[_]](node: InternalLocalNode[F], shutdownNodeOnClose: Boolean) extends TcpClient {
 
   override val java: Client = {
     node.start()
@@ -158,7 +159,7 @@ object LocalNode {
 
   // creates a LocalNode with all settings provided by the user
   // and using default plugins
-  def apply(settings: Settings): InternalLocalNode = {
+  def apply[F[_]](settings: Settings): InternalLocalNode[F] = {
     require(settings.get("cluster.name") != null)
     require(settings.get("path.home") != null)
     require(settings.get("path.data") != null)
@@ -176,7 +177,7 @@ object LocalNode {
   }
 
   // creates a LocalNode with all settings provided by the user
-  def apply(map: Map[String, String]): InternalLocalNode = {
+  def apply[F[_]](map: Map[String, String]): InternalLocalNode[F] = {
     val settings = map.foldLeft(Settings.builder) { case (builder, (key, value)) => builder.put(key, value) }.build()
     apply(settings)
   }
@@ -196,5 +197,5 @@ object LocalNode {
   *   Creates a new LocalNode with default settings using the given cluster name and home path.
   *   Other required directories are created inside the path home folder.
   */
-  def apply(clusterName: String, pathHome: String): InternalLocalNode = apply(requiredSettings(clusterName, pathHome))
+  def apply[F[_]](clusterName: String, pathHome: String): InternalLocalNode[F] = apply(requiredSettings(clusterName, pathHome))
 }

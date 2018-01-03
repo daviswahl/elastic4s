@@ -123,7 +123,7 @@ trait IndexStatsImplicits {
 
   implicit object IndicesStatsExecutable extends HttpExecutable[IndexStats, IndexStatsResponse] {
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: IndexStats): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F,E], request: IndexStats)(implicit E: FromListener[F,E]): F[HttpResponse] = {
       val endpoint = if (request.indices.isAll) "/_stats" else s"/${request.indices.string}/_stats"
       client.async("GET", endpoint, Map.empty)
     }

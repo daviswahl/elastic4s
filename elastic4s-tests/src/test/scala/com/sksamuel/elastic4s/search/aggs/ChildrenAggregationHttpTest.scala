@@ -4,13 +4,14 @@ import com.sksamuel.elastic4s.http.{ElasticDsl, HttpClient}
 import com.sksamuel.elastic4s.searches.DateHistogramInterval
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.concurrent.Future
 import scala.util.Try
 
 class ChildrenAggregationHttpTest extends FlatSpec with Matchers with ElasticDsl {
 
   "child aggs" should "support sub aggs" ignore {
 
-    val http = HttpClient("elasticsearch://localhost:9200")
+    val http = HttpClient[Future]("elasticsearch://localhost:9200")
 
     Try {
       http.execute {

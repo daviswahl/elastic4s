@@ -6,7 +6,7 @@ import cats.{Functor, Show}
 import com.sksamuel.elastic4s.ElasticsearchClientUri
 import com.sksamuel.exts.Logging
 import org.apache.http.HttpHost
-import org.elasticsearch.client.RestClient
+import org.elasticsearch.client.{ResponseListener, RestClient}
 import org.elasticsearch.client.RestClientBuilder.{HttpClientConfigCallback, RequestConfigCallback}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -44,10 +44,10 @@ case class RequestFailure(
   override def isError = true
 }
 
-trait HttpClient extends Logging {
+trait HttpClient[F[_], E] extends Logging {
 
   // the underlying client that performs the requests
-  def client: HttpRequestClient
+  def client: HttpRequestClient[F, E]
 
   /**
     * Returns a json String containing the request body.
@@ -60,9 +60,9 @@ trait HttpClient extends Logging {
   // Executes the given request type T, and returns a Future of Response[U] where U is particular to the request type.
   // For example a search request will return a Future[Response[SearchResponse]].
   // The returned Response is an ADT
-  def execute[F[_]: FromListener, T, U](request: T)(
-      implicit exec: HttpExecutable[T, U]): F[Either[RequestFailure, RequestSuccess[U]]] = {
-    Functor[F].map(exec.execute(client, request))(r =>
+  def execute[T, U](request: T)(
+      implicit exec: HttpExecutable[T, U], E: FromListener[F, E]): F[Either[RequestFailure, RequestSuccess[U]]] = {
+    E.map(exec.execute(client, request))(r =>
       exec.responseHandler.handle(r) match {
         case Right(u) =>
           Right(RequestSuccess(r.statusCode, r.entity.map(_.content), r.headers, u))
@@ -82,17 +82,17 @@ trait HttpClient extends Logging {
   *
   * A failed future should only be returned if the communication itself failed.
   */
-trait HttpRequestClient extends Logging {
+trait HttpRequestClient[F[_], E] extends Logging {
 
-  def async[F[_]: FromListener](method: String, endpoint: String): F[HttpResponse] =
+  def async(method: String, endpoint: String)(implicit executor: FromListener[F, E]): F[HttpResponse] =
     async(method, endpoint, Map.empty)
 
-  def async[F[_]: FromListener](method: String, endpoint: String, params: Map[String, Any]): F[HttpResponse]
+  def async(method: String, endpoint: String, params: Map[String, Any])(implicit executor: FromListener[F,E]): F[HttpResponse]
 
-  def async[F[_]: FromListener](method: String,
+  def async(method: String,
             endpoint: String,
             params: Map[String, Any],
-            entity: HttpEntity): F[HttpResponse]
+            entity: HttpEntity)(implicit executor: FromListener[F, E]): F[HttpResponse]
 
   def close(): Unit
 }
@@ -119,8 +119,8 @@ object HttpClient extends Logging {
     * Any underlying library can be made to work with elastic4s.HttpClient by creating an instance
     * of the HttpRequestClient typeclass.
     */
-  def apply(hrc: HttpRequestClient): HttpClient = new HttpClient {
-    override def client: HttpRequestClient = hrc
+  def apply[F[_], E](hrc: HttpRequestClient[F, E]): HttpClient[F, E] = new HttpClient[F, E] {
+    override def client: HttpRequestClient[F,E] = hrc
     override def close(): Unit             = hrc.close()
   }
 
@@ -130,8 +130,8 @@ object HttpClient extends Logging {
     * @param client the Java client to wrap
     * @return newly created Scala client
     */
-  def fromRestClient(client: RestClient): HttpClient =
-    apply(new ElasticsearchJavaRestClient(client))
+  def fromRestClient[F[_]](client: RestClient): HttpClient[F, ResponseListener] =
+    apply(new ElasticsearchJavaRestClient[F](client))
 
   /**
     * Creates a new HttpClient using the elasticsearch Java API rest client as the underlying
@@ -139,10 +139,10 @@ object HttpClient extends Logging {
     *
     * Alternatively, create a RestClient manually and call apply(RestClient).
     */
-  def apply(uri: ElasticsearchClientUri,
+  def apply[F[_]](uri: ElasticsearchClientUri,
             requestConfigCallback: RequestConfigCallback = NoOpRequestConfigCallback,
             httpClientConfigCallback: HttpClientConfigCallback = NoOpHttpClientConfigCallback)
-    : HttpClient = {
+    : HttpClient[F, ResponseListener] = {
     val hosts = uri.hosts.map {
       case (host, port) =>
         new HttpHost(host,

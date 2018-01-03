@@ -4,8 +4,6 @@ import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.testkit.DiscoveryLocalNodeProvider
 import org.scalatest.{FlatSpec, Matchers}
 import scala.concurrent.ExecutionContext.Implicits.global
-import cats.instances.future._
-import com.sksamuel.elastic4s.http.ScalaFutureFromListener._
 
 class TasksTest extends FlatSpec with DiscoveryLocalNodeProvider with Matchers with ElasticDsl {
 

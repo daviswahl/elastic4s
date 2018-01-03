@@ -14,7 +14,7 @@ trait LocksImplicits {
       override def handle(response: HttpResponse) = Right(response.statusCode == 201)
     }
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: AcquireGlobalLock): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F,E], request: AcquireGlobalLock)(implicit E: FromListener[F,E]): F[HttpResponse] = {
       client.async("PUT", endpoint, Map.empty)
     }
   }
@@ -25,7 +25,7 @@ trait LocksImplicits {
       override def handle(response: HttpResponse) = Right(response.statusCode == 200)
     }
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: ReleaseGlobalLock): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F,E], request: ReleaseGlobalLock)(implicit E: FromListener[F,E]): F[HttpResponse] = {
       client.async("DELETE", "/fs/lock/global", Map.empty)
     }
   }

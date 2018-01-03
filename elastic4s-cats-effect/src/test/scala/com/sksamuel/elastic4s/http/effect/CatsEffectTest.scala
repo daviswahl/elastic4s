@@ -6,11 +6,12 @@
 
 package com.sksamuel.elastic4s.http.effect
 
+import cats.effect.IO
 import cats.effect.IO._
 import com.sksamuel.elastic4s.RefreshPolicy
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.http.effect.CatsEffectInstances._
-import com.sksamuel.elastic4s.testkit.DiscoveryLocalNodeProvider
+import com.sksamuel.elastic4s.testkit.{DiscoveryLocalNodeProvider, GenericDiscoveryLocalNodeProvider}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.Try
@@ -19,14 +20,13 @@ class CatsEffectTest
     extends FlatSpec
     with Matchers
     with ElasticDsl
-    with DiscoveryLocalNodeProvider {
+    with GenericDiscoveryLocalNodeProvider[IO] {
 
   Try {
     http
       .execute {
         deleteIndex("beer")
       }
-      .unsafeRunSync()
   }
 
   http
@@ -50,8 +50,6 @@ class CatsEffectTest
   }
 
   "An IO Effect" should "be deferred until run" in {
-
-    Thread.sleep(2000) // ensure the effect is not being run
     val doGet = http
       .execute {
         get("8") from "beer"

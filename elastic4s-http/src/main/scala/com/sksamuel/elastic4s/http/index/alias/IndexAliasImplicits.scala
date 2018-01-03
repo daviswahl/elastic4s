@@ -26,7 +26,7 @@ trait IndexAliasImplicits {
       }
     }
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: GetAliasesDefinition): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F,E], request: GetAliasesDefinition)(implicit E: FromListener[F,E]): F[HttpResponse] = {
       val endpoint = s"/${request.indices.string}/_alias/${request.aliases.mkString(",")}"
       val params = request.ignoreUnavailable.fold(Map.empty[String, Any]) { ignore => Map("ignore_unavailable" -> ignore) }
       client.async("GET", endpoint, params)
@@ -34,21 +34,21 @@ trait IndexAliasImplicits {
   }
 
   implicit object RemoveAliasActionExecutable extends HttpExecutable[RemoveAliasActionDefinition, AliasActionResponse] {
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: RemoveAliasActionDefinition): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F,E], request: RemoveAliasActionDefinition)(implicit E: FromListener[F,E]): F[HttpResponse] = {
       val container = IndicesAliasesRequestDefinition(Seq(request))
-      IndexAliasesExecutable.execute[F](client, container)
+      IndexAliasesExecutable.execute[F, E](client, container)
     }
   }
 
   implicit object AddAliasActionExecutable extends HttpExecutable[AddAliasActionDefinition, AliasActionResponse] {
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: AddAliasActionDefinition): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F,E], request: AddAliasActionDefinition)(implicit E: FromListener[F,E]): F[HttpResponse] = {
       val container = IndicesAliasesRequestDefinition(Seq(request))
-      IndexAliasesExecutable.execute[F](client, container)
+      IndexAliasesExecutable.execute[F, E](client, container)
     }
   }
 
   implicit object IndexAliasesExecutable extends HttpExecutable[IndicesAliasesRequestDefinition, AliasActionResponse] {
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: IndicesAliasesRequestDefinition): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F,E], request: IndicesAliasesRequestDefinition)(implicit E: FromListener[F,E]): F[HttpResponse] = {
       val body = AliasActionBuilder(request).string()
       val entity = HttpEntity(body, ContentType.APPLICATION_JSON.getMimeType)
       client.async("POST", "/_aliases", Map.empty, entity)

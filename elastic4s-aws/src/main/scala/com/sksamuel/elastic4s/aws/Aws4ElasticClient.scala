@@ -4,11 +4,13 @@ package com.sksamuel.elastic4s.aws
 import com.sksamuel.elastic4s.ElasticsearchClientUri
 import com.sksamuel.elastic4s.http.HttpClient
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials, DefaultAWSCredentialsProviderChain}
-
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder
 import org.apache.http.protocol.HttpContext
 import org.apache.http.{HttpRequest, HttpRequestInterceptor}
+import org.elasticsearch.client.ResponseListener
+
+import scala.concurrent.Future
 
 case class Aws4ElasticConfig(endpoint: String, key: String, secret: String, region: String, service: String = "es") {
   require(key.length > 16 && key.length < 128 && key.matches("[\\w]+"), "Key id must be between 16 and 128 characters.")
@@ -19,7 +21,7 @@ object Aws4ElasticClient {
   /**
     * Creates ES HttpClient with aws4 request signer interceptor using custom config (key, secret, region and service).
     */
-  def apply(config: Aws4ElasticConfig): HttpClient = {
+  def apply(config: Aws4ElasticConfig): HttpClient[Future, ResponseListener] = {
     val elasticUri = ElasticsearchClientUri(config.endpoint)
     HttpClient(elasticUri, httpClientConfigCallback = new SignedClientConfig(config))
   }
@@ -28,7 +30,7 @@ object Aws4ElasticClient {
     * Convenience method to create ES HttpClient with aws4 request signer interceptor using default aws environment variables.
     * See <a href="http://docs.aws.amazon.com/cli/latest/userguide/cli-environment.html">amazon environment variables documentation</a>
     */
-  def apply(endpoint: String): HttpClient = {
+  def apply(endpoint: String): HttpClient[Future, ResponseListener] = {
     val elasticUri = ElasticsearchClientUri(endpoint)
     HttpClient(elasticUri, httpClientConfigCallback = new DefaultSignedClientConfig)
   }

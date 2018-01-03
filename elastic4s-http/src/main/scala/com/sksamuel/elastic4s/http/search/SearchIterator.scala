@@ -17,8 +17,8 @@ object SearchIterator {
   /**
     * Creates a new Iterator for instances of SearchHit by wrapping the given HTTP client.
     */
-  def hits[F[_]: FromListener : Awaitable](client: HttpClient,
-                              searchdef: SearchDefinition)
+  def hits[F[_], E](client: HttpClient[F, E],
+                              searchdef: SearchDefinition)(implicit E: FromListener[F, E], await: Awaitable[F])
                              : Iterator[SearchHit] = new Iterator[SearchHit] {
     require(searchdef.keepAlive.isDefined, "Search request must define keep alive value")
 
@@ -58,8 +58,8 @@ object SearchIterator {
     * A typeclass HitReader[T] must be provided for marshalling of the search
     * responses into instances of type T.
     */
-  def iterate[F[_]: FromListener: Awaitable : Functor, T](client: HttpClient,
+  def iterate[F[_], E, T](client: HttpClient[F, E],
                  search: SearchDefinition)
-                (implicit reader: HitReader[T]): Iterator[T] =
+                (implicit reader: HitReader[T], E: FromListener[F, E], await: Awaitable[F]): Iterator[T] =
     hits(client, search).map(_.to[T])
 }

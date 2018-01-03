@@ -26,7 +26,7 @@ case class IndexTemplate(order: Int,
 trait IndexTemplateImplicits {
 
   implicit object IndexTemplateExistsHttpExecutable extends HttpExecutable[IndexTemplateExistsDefinition, IndexTemplateExists] {
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: IndexTemplateExistsDefinition): F[HttpResponse] = ???
+    override def execute[F[_], E](client: HttpRequestClient[F,E], request: IndexTemplateExistsDefinition)(implicit E: FromListener[F,E]): F[HttpResponse] = ???
   }
 
   implicit object CreateIndexTemplateHttpExecutable extends HttpExecutable[CreateIndexTemplateDefinition, CreateIndexTemplateResponse] {
@@ -38,8 +38,8 @@ trait IndexTemplateImplicits {
       }
     }
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient,
-                         request: CreateIndexTemplateDefinition): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F,E],
+                         request: CreateIndexTemplateDefinition)(implicit E: FromListener[F,E]): F[HttpResponse] = {
       val endpoint = s"/_template/" + request.name
       val body = CreateIndexTemplateBodyFn(request)
       val entity = HttpEntity(body.string, ContentType.APPLICATION_JSON.getMimeType)
@@ -48,8 +48,8 @@ trait IndexTemplateImplicits {
   }
 
   implicit object DeleteIndexTemplateHttpExecutable extends HttpExecutable[DeleteIndexTemplateDefinition, DeleteIndexTemplateResponse] {
-    override def execute[F[_]: FromListener](client: HttpRequestClient,
-                         request: DeleteIndexTemplateDefinition): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F,E],
+                         request: DeleteIndexTemplateDefinition)(implicit E: FromListener[F,E]): F[HttpResponse] = {
       val endpoint = s"/_template/" + request.name
       client.async("DELETE", endpoint, Map.empty)
     }
@@ -66,7 +66,7 @@ trait IndexTemplateImplicits {
       }
     }
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: GetIndexTemplateDefinition): F[HttpResponse] = {
+    override def execute[F[_], E](client: HttpRequestClient[F,E], request: GetIndexTemplateDefinition)(implicit E: FromListener[F,E]): F[HttpResponse] = {
       val endpoint = s"/_template/" + request.indexes.string
       client.async("GET", endpoint, Map.empty)
     }

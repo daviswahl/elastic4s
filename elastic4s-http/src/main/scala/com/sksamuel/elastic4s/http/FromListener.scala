@@ -11,13 +11,11 @@ import scala.io.{Codec, Source}
 /*
  *  A typeclass that can be used to convert from a ResponseListener callback into a generic effect type.
  */
-trait FromListener[F[_]] extends Functor[F] {
-  def fromListener(f: ResponseListener => Unit): F[HttpResponse]
+trait FromListener[F[_], E] extends Functor[F] {
+  def fromListener(f: E => Unit): F[HttpResponse]
 }
 
 object FromListener {
-  def apply[F[_]: FromListener]: FromListener[F] = implicitly[FromListener[F]]
-
   def fromResponse(r: org.elasticsearch.client.Response): HttpResponse = {
     val entity = Option(r.getEntity).map { entity =>
       val contentEncoding =
@@ -33,8 +31,9 @@ object FromListener {
   }
 
   implicit def scalaFutureFromListenerInstance(
-      implicit ec: ExecutionContext = ExecutionContext.Implicits.global): FromListener[Future] =
-    new FromListener[Future] {
+      implicit ec: ExecutionContext = ExecutionContext.Implicits.global)
+    : FromListener[Future, ResponseListener] =
+    new FromListener[Future, ResponseListener] {
 
       override def map[A, B](fa: Future[A])(f: A => B): Future[B] = fa.map(f)
 
