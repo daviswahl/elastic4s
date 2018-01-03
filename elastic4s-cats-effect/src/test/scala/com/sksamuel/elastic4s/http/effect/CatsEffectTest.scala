@@ -51,7 +51,6 @@ class CatsEffectTest
 
   "An IO Effect" should "be deferred until run" in {
 
-    Thread.sleep(2000) // ensure the effect is not being run
     val doGet = http
       .execute {
         get("8") from "beer"
