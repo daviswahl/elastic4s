@@ -1,6 +1,6 @@
 package com.sksamuel.elastic4s.http.validate
 
-import cats.{Functor, Show}
+import cats.Show
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.sksamuel.elastic4s.http.search.queries.QueryBuilderFn
 import com.sksamuel.elastic4s.http._
@@ -34,7 +34,7 @@ trait ValidateImplicits {
 
   implicit object ValidateHttpExecutable extends HttpExecutable[ValidateDefinition, ValidateResponse] {
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: ValidateDefinition): F[HttpResponse] = {
+    override def execute[F[_]: AsyncExecutor](client: HttpRequestClient, request: ValidateDefinition): F[HttpResponse] = {
 
       val endpoint = s"${request.indexesAndTypes.indexes.mkString(",")}/${request.indexesAndTypes.types.mkString(",")}/_validate/query"
 

@@ -1,9 +1,10 @@
 package com.sksamuel.elastic4s.http.search
 
-import cats.Functor
 import com.sksamuel.elastic4s.HitReader
-import com.sksamuel.elastic4s.http.{Awaitable, FromListener, HttpClient}
+import com.sksamuel.elastic4s.http.{AsyncExecutor, Awaitable, HttpClient}
 import com.sksamuel.elastic4s.searches.SearchDefinition
+
+import scala.concurrent.duration.Duration
 
 /**
   * A SearchIterator is used to create standard library iterator's from a search request.
@@ -17,15 +18,15 @@ object SearchIterator {
   /**
     * Creates a new Iterator for instances of SearchHit by wrapping the given HTTP client.
     */
-  def hits[F[_]: FromListener : Awaitable](client: HttpClient,
-                              searchdef: SearchDefinition)
-                             : Iterator[SearchHit] = new Iterator[SearchHit] {
+  def hits[F[_]: AsyncExecutor: Awaitable](
+      client: HttpClient,
+      searchdef: SearchDefinition)(implicit timeout: Duration): Iterator[SearchHit] = new Iterator[SearchHit] {
     require(searchdef.keepAlive.isDefined, "Search request must define keep alive value")
 
     import com.sksamuel.elastic4s.http.ElasticDsl._
 
     private var iterator: Iterator[SearchHit] = Iterator.empty
-    private var scrollId: Option[String] = None
+    private var scrollId: Option[String]      = None
 
     override def hasNext: Boolean = iterator.hasNext || {
       iterator = fetchNext()
@@ -38,14 +39,14 @@ object SearchIterator {
 
       // we're either advancing a scroll id or issuing the first query w/ the keep alive set
       val resp = scrollId match {
-        case Some(id) => implicitly[Awaitable[F]].await(client.execute(searchScroll(id, searchdef.keepAlive.get)))
-        case None => implicitly[Awaitable[F]].await(client.execute(searchdef))
+        case Some(id) => client.execute(searchScroll(id, searchdef.keepAlive.get))
+        case None => client.execute(searchdef)
       }
 
       // in a search scroll we must always use the last returned scrollId
-      val response = resp match {
+      val response = Awaitable[F].await(resp, timeout) match {
         case Right(success) => success.result
-        case Left(failure) => sys.error(failure.toString)
+        case Left(failure)  => sys.error(failure.toString)
       }
 
       scrollId = response.scrollId
@@ -58,8 +59,8 @@ object SearchIterator {
     * A typeclass HitReader[T] must be provided for marshalling of the search
     * responses into instances of type T.
     */
-  def iterate[F[_]: FromListener: Awaitable : Functor, T](client: HttpClient,
-                 search: SearchDefinition)
-                (implicit reader: HitReader[T]): Iterator[T] =
-    hits(client, search).map(_.to[T])
+  def iterate[F[_]: AsyncExecutor: Awaitable, T](
+      client: HttpClient,
+      search: SearchDefinition)(implicit reader: HitReader[T], timeout: Duration): Iterator[T] =
+    hits[F](client, search).map(_.to[T])
 }

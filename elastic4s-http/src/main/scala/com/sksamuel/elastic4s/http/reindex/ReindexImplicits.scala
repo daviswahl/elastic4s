@@ -1,6 +1,5 @@
 package com.sksamuel.elastic4s.http.reindex
 
-import cats.Functor
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.sksamuel.elastic4s.http._
 import com.sksamuel.elastic4s.reindex.ReindexDefinition
@@ -42,7 +41,7 @@ trait ReindexImplicits {
       }
     }
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: ReindexDefinition): F[HttpResponse] = {
+    override def execute[F[_]: AsyncExecutor](client: HttpRequestClient, request: ReindexDefinition): F[HttpResponse] = {
 
       val params = scala.collection.mutable.Map.empty[String, String]
       request.refresh.map(RefreshPolicyHttpValue.apply).foreach(params.put("refresh", _))

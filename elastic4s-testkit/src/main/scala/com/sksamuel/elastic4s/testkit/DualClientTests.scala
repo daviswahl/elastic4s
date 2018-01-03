@@ -6,10 +6,9 @@ import com.sksamuel.exts.Logging
 import org.elasticsearch.{ElasticsearchException, ElasticsearchWrapperException}
 import org.scalatest._
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Random
-import scala.concurrent.ExecutionContext.Implicits.global
-import com.sksamuel.elastic4s.http.ScalaFutureFromListener._
 
 trait DualClientTests
   extends SuiteMixin

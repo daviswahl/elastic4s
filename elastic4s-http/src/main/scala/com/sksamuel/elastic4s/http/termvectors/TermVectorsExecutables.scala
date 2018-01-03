@@ -1,6 +1,5 @@
 package com.sksamuel.elastic4s.http.termvectors
 
-import cats.Functor
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.sksamuel.elastic4s.DocumentRef
 import com.sksamuel.elastic4s.http._
@@ -12,7 +11,7 @@ trait TermVectorsExecutables {
 
   implicit object TermVectorHttpExecutable extends HttpExecutable[TermVectorsDefinition, TermVectorsResponse] {
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: TermVectorsDefinition): F[HttpResponse] = {
+    override def execute[F[_]: AsyncExecutor](client: HttpRequestClient, request: TermVectorsDefinition): F[HttpResponse] = {
 
       val endpoint = s"/${request.indexAndType.index}/${request.indexAndType.`type`}/${request.id}/_termvectors"
 

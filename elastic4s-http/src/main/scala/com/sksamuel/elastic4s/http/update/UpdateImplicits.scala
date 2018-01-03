@@ -2,7 +2,7 @@ package com.sksamuel.elastic4s.http.update
 
 import java.net.URLEncoder
 
-import cats.{Functor, Show}
+import cats.Show
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.sksamuel.elastic4s.DocumentRef
 import com.sksamuel.elastic4s.http._
@@ -61,7 +61,7 @@ trait UpdateImplicits {
       }
     }
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: UpdateDefinition): F[HttpResponse] = {
+    override def execute[F[_]: AsyncExecutor](client: HttpRequestClient, request: UpdateDefinition): F[HttpResponse] = {
 
       val endpoint = s"/${URLEncoder.encode(request.indexAndType.index)}/${request.indexAndType.`type`}/${URLEncoder.encode(request.id)}/_update"
 
@@ -85,7 +85,7 @@ trait UpdateImplicits {
   }
 
   implicit object UpdateByQueryHttpExecutable extends HttpExecutable[UpdateByQueryDefinition, UpdateByQueryResponse] {
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: UpdateByQueryDefinition): F[HttpResponse] = {
+    override def execute[F[_]: AsyncExecutor](client: HttpRequestClient, request: UpdateByQueryDefinition): F[HttpResponse] = {
 
       val endpoint = if (request.indexesAndTypes.types.isEmpty)
         s"/${request.indexesAndTypes.indexes.mkString(",")}/_update_by_query"

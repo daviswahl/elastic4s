@@ -1,6 +1,5 @@
 package com.sksamuel.elastic4s.http.task
 
-import cats.Functor
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.sksamuel.elastic4s.http._
 import com.sksamuel.elastic4s.task.{CancelTasksDefinition, ListTasksDefinition}
@@ -31,7 +30,7 @@ trait TaskImplicits {
 
   implicit object ListTaskHttpExecutable extends HttpExecutable[ListTasksDefinition, ListTaskResponse] {
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: ListTasksDefinition): F[HttpResponse] = {
+    override def execute[F[_]: AsyncExecutor](client: HttpRequestClient, request: ListTasksDefinition): F[HttpResponse] = {
 
       val params = scala.collection.mutable.Map.empty[String, String]
       if (request.nodeIds.nonEmpty)
@@ -54,7 +53,7 @@ trait TaskImplicits {
       override def handle(response: HttpResponse) = Right(response.statusCode >= 200 && response.statusCode < 300)
     }
 
-    override def execute[F[_]: FromListener](client: HttpRequestClient, request: CancelTasksDefinition): F[HttpResponse] = {
+    override def execute[F[_]: AsyncExecutor](client: HttpRequestClient, request: CancelTasksDefinition): F[HttpResponse] = {
 
       val endpoint = if (request.nodeIds.isEmpty) s"/_tasks/cancel"
       else s"/_tasks/task_id:${request.nodeIds.mkString(",")}/_cancel"
